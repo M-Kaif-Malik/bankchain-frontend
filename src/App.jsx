@@ -2,7 +2,7 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-
+/*
 function App() {
   const [count, setCount] = useState(0)
 
@@ -33,3 +33,41 @@ function App() {
 }
 
 export default App
+*/
+
+import WalletConnect from "./components/WalletConnect";
+import Dashboard from "./components/Dashboard";
+import Deposit from "./components/Deposit";
+import Withdraw from "./components/Withdraw";
+import Transfer from "./components/Transfer";
+/*
+import Cards from "./components/Cards";
+import Loans from "./components/Loans";
+import AuditLogs from "./components/AuditLogs";
+*/
+
+export default function App() {
+  const [account, setAccount] = useState(null);
+
+  return (
+    <div className="app">
+      <h1>🏦 BankChain</h1>
+
+      {!account && <WalletConnect setAccount={setAccount} />}
+
+      {account && (
+        <>
+          <Dashboard />
+          <Deposit />
+          <Withdraw />
+          <Transfer />
+          {/*
+          <Cards />
+          <Loans />
+          <AuditLogs />
+          */}
+        </>
+      )}
+    </div>
+  );
+}
