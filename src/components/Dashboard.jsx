@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAccountsContract } from "../utils/contract";
+import { getAccountsContract, getSigner } from "../utils/contract";
 import { ethers } from "ethers";
 
 export default function Dashboard() {
@@ -7,9 +7,25 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadBalance() {
-      const accounts = await getAccountsContract();
-      const bal = await accounts.getBalance();
-      setBalance(ethers.formatEther(bal));
+      try {
+        const signer = await getSigner();
+        if (!signer) {
+          console.error("No signer available when loading balance");
+          setBalance("0");
+          return;
+        }
+        const address = await signer.getAddress();
+
+        // Derive bytes32 account id from the user's address
+        const accountId = ethers.zeroPadValue(address.toLowerCase(), 32);
+
+        const accounts = await getAccountsContract();
+        const bal = await accounts.checkBalance(accountId);
+        setBalance(ethers.formatEther(bal));
+      } catch (error) {
+        console.error("Error loading balance:", error);
+        setBalance("0");
+      }
     }
     loadBalance();
   }, []);

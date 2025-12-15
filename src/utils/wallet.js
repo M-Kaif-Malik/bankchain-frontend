@@ -8,5 +8,6 @@ export async function connectWallet() {
         method: "eth_requestAccounts",
     });
 
-    return accounts[0];
+    // Return full list so the dApp can show other connected accounts
+    return accounts;
 }

@@ -1,17 +1,36 @@
-import { getAccountsContract } from "../utils/contract";
+import { getAccountsContract, getSigner } from "../utils/contract";
+import { logAuditAction } from "../utils/auditLogger";
 import { ethers } from "ethers";
 import { useState } from "react";
 
 export default function Deposit() {
   const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState("");
 
   const deposit = async () => {
-    const accounts = await getAccountsContract();
-    const tx = await accounts.deposit({
-      value: ethers.parseEther(amount),
-    });
-    await tx.wait();
-    alert("Deposit Successful");
+    try {
+      setStatus("Sending deposit...");
+      const signer = await getSigner();
+      const address = await signer.getAddress();
+
+      const accountId = ethers.zeroPadValue(address.toLowerCase(), 32);
+
+      const accounts = await getAccountsContract();
+
+      const valueWei = ethers.parseEther(amount);
+      const tx = await accounts.deposit(accountId, {
+        value: valueWei,
+      });
+      await tx.wait();
+      setStatus("Deposit successful");
+      setAmount("");
+
+      // best-effort audit log (will only succeed for Audit owner)
+      await logAuditAction("Deposit", accountId, valueWei);
+    } catch (error) {
+      console.error("Deposit error:", error);
+      alert("Deposit failed: " + error.message);
+    }
   };
 
   return (

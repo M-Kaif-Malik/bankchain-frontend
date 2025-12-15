@@ -17,29 +17,73 @@ let provider;
 let signer;
 
 async function getSigner() {
-  if (!provider) {
-    provider = new ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
+  try {
+    if (!window.ethereum) {
+      throw new Error("MetaMask is not installed");
+    }
+
+    // Lazily create provider and signer, but also recover if signer was never set
+    if (!provider) {
+      provider = new ethers.BrowserProvider(window.ethereum);
+    }
+
+    if (!signer) {
+      signer = await provider.getSigner();
+    }
+
+    if (!signer) {
+      throw new Error("Unable to get signer from provider");
+    }
+
+    return signer;
+  } catch (error) {
+    console.error("Error getting signer:", error);
+    throw error;
   }
-  return signer;
 }
+
+export { getSigner };
 
 export async function getAccountsContract() {
   const signer = await getSigner();
-  return new ethers.Contract(ADDRESSES.accounts, Accounts.abi, signer);
+  const address = ADDRESSES.accounts;
+  
+  if (!address) {
+    throw new Error("Accounts contract address not configured. Please set VITE_ACCOUNTS_ADDRESS in your environment variables.");
+  }
+  
+  return new ethers.Contract(address, Accounts.abi, signer);
 }
 
 export async function getAuditContract() {
   const signer = await getSigner();
-  return new ethers.Contract(ADDRESSES.audit, Audit.abi, signer);
+  const address = ADDRESSES.audit;
+  
+  if (!address) {
+    throw new Error("Audit contract address not configured. Please set VITE_AUDIT_ADDRESS in your environment variables.");
+  }
+  
+  return new ethers.Contract(address, Audit.abi, signer);
 }
 
 export async function getCardsContract() {
   const signer = await getSigner();
-  return new ethers.Contract(ADDRESSES.cards, Cards.abi, signer);
+  const address = ADDRESSES.cards;
+  
+  if (!address) {
+    throw new Error("Cards contract address not configured. Please set VITE_CARDS_ADDRESS in your environment variables.");
+  }
+  
+  return new ethers.Contract(address, Cards.abi, signer);
 }
 
 export async function getLoansContract() {
   const signer = await getSigner();
-  return new ethers.Contract(ADDRESSES.loans, Loans.abi, signer);
+  const address = ADDRESSES.loans;
+  
+  if (!address) {
+    throw new Error("Loans contract address not configured. Please set VITE_LOANS_ADDRESS in your environment variables.");
+  }
+  
+  return new ethers.Contract(address, Loans.abi, signer);
 }

@@ -1,73 +1,112 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-/*
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
-
-export default App
-*/
+import { useState } from "react";
+import "./App.css";
 
 import WalletConnect from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
 import Deposit from "./components/Deposit";
 import Withdraw from "./components/Withdraw";
 import Transfer from "./components/Transfer";
-/*
+import AdminAccounts from "./components/AdminAccounts";
 import Cards from "./components/Cards";
 import Loans from "./components/Loans";
-import AuditLogs from "./components/AuditLogs";
-*/
+import Audit from "./components/Audit";
 
 export default function App() {
-  const [account, setAccount] = useState(null);
+	const [account, setAccount] = useState(null);
+	const [accounts, setAccounts] = useState([]);
+	const [activePage, setActivePage] = useState("accounts"); // "accounts" | "cards" | "loans" | "audit" | "admin"
 
-  return (
-    <div className="app">
-      <h1>🏦 BankChain</h1>
+	const renderContent = () => {
+		if (!account) {
+			return <WalletConnect setAccount={setAccount} setAccounts={setAccounts} />;
+		}
 
-      {!account && <WalletConnect setAccount={setAccount} />}
+		if (activePage === "accounts") {
+			return (
+				<>
+					<Dashboard />
+					<Deposit />
+					<Withdraw />
+					<Transfer accounts={accounts} currentAccount={account} />
+				</>
+			);
+		}
 
-      {account && (
-        <>
-          <Dashboard />
-          <Deposit />
-          <Withdraw />
-          <Transfer />
-          {/*
-          <Cards />
-          <Loans />
-          <AuditLogs />
-          */}
-        </>
-      )}
-    </div>
-  );
+		if (activePage === "cards") {
+			return <Cards />;
+		}
+
+		if (activePage === "loans") {
+			return <Loans />;
+		}
+
+		if (activePage === "audit") {
+			return <Audit />;
+		}
+
+		if (activePage === "admin") {
+			return <AdminAccounts />;
+		}
+
+		return null;
+	};
+
+	return (
+		<div className="app">
+			<h1>🏦 BankChain</h1>
+
+			{/* Top-level navigation once a wallet is connected */}
+			{account && (
+				<div style={{ marginBottom: "1rem" }}>
+					<button
+						onClick={() => setActivePage("accounts")}
+						style={{
+							marginRight: "0.5rem",
+							fontWeight: activePage === "accounts" ? "bold" : "normal",
+						}}
+					>
+						Accounts
+					</button>
+					<button
+						onClick={() => setActivePage("cards")}
+						style={{
+							marginRight: "0.5rem",
+							fontWeight: activePage === "cards" ? "bold" : "normal",
+						}}
+					>
+						Cards
+					</button>
+					<button
+						onClick={() => setActivePage("loans")}
+						style={{
+							marginRight: "0.5rem",
+							fontWeight: activePage === "loans" ? "bold" : "normal",
+						}}
+					>
+						Loans
+					</button>
+					<button
+						onClick={() => setActivePage("audit")}
+						style={{
+							marginRight: "0.5rem",
+							fontWeight: activePage === "audit" ? "bold" : "normal",
+						}}
+					>
+						Audit
+					</button>
+					<button
+						onClick={() => setActivePage("admin")}
+						style={{
+							fontWeight: activePage === "admin" ? "bold" : "normal",
+						}}
+					>
+						Admin
+					</button>
+				</div>
+			)}
+
+			{renderContent()}
+		</div>
+	);
 }
+
