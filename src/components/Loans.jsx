@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { getLoansContract, getSigner } from "../utils/contract";
+import { getLoansContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
 
 export default function Loans() {
-  const [accountsAddress, setAccountsAddress] = useState("");
   const [principal, setPrincipal] = useState("");
   const [interest, setInterest] = useState("");
   const [loanId, setLoanId] = useState("");
@@ -15,9 +14,12 @@ export default function Loans() {
     try {
       setStatus("Setting Accounts contract on Loans...");
       const loans = await getLoansContract();
-      if (!ethers.isAddress(accountsAddress)) {
-        throw new Error("Invalid Accounts contract address");
+      const accountsAddress = import.meta.env.VITE_ACCOUNTS_ADDRESS;
+
+      if (!accountsAddress || !ethers.isAddress(accountsAddress)) {
+        throw new Error("Accounts contract address not configured. Please set VITE_ACCOUNTS_ADDRESS in your environment.");
       }
+
       const tx = await loans.setAccountsContract(accountsAddress);
       await tx.wait();
       setStatus(`Accounts contract set to ${accountsAddress}`);
@@ -32,10 +34,18 @@ export default function Loans() {
       setStatus("Applying for loan...");
 
       const signer = await getSigner();
-      const address = await signer.getAddress();
 
-      // Use the same bytes32 accountId derived from the user's address
-      const accountId = ethers.zeroPadValue(address.toLowerCase(), 32);
+      // Require that the user has registered an account id in AccountRegistry
+      const registry = await getAccountRegistryContract();
+      const myId = await registry.getMyAccountId();
+      if (!myId || myId.length === 0) {
+        setStatus("Error: please register an account ID in the Dashboard first");
+        return;
+      }
+
+      // Resolve the registered account ID to the underlying wallet and derive bytes32 id from that
+      const wallet = await registry.resolveAccount(myId);
+      const accountId = ethers.zeroPadValue(wallet.toLowerCase(), 32);
 
       const loans = await getLoansContract();
       const principalWei = ethers.parseEther(principal || "0");
@@ -87,6 +97,14 @@ export default function Loans() {
     try {
       setStatus("Repaying loan...");
       const loans = await getLoansContract();
+
+      // Require that the user has registered an account id in AccountRegistry
+      const registry = await getAccountRegistryContract();
+      const myId = await registry.getMyAccountId();
+      if (!myId || myId.length === 0) {
+        setStatus("Error: please register an account ID in the Dashboard first");
+        return;
+      }
       const id = BigInt(loanId);
       const amountWei = ethers.parseEther(repayAmount || "0");
       const tx = await loans.repayLoan(id, { value: amountWei });
@@ -108,13 +126,10 @@ export default function Loans() {
 
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
         <h3>Admin: Link Accounts Contract</h3>
-        <input
-          placeholder="Accounts contract address (0x...)"
-          value={accountsAddress}
-          onChange={(e) => setAccountsAddress(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button onClick={setAccounts}>Set Accounts Contract</button>
+        <p style={{ fontSize: "0.9rem" }}>
+          Uses the configured VITE_ACCOUNTS_ADDRESS from the environment.
+        </p>
+        <button onClick={setAccounts}>Set Accounts Contract from Config</button>
       </div>
 
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>

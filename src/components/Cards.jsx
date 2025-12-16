@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { getCardsContract, getSigner } from "../utils/contract";
+import { getCardsContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
 
 export default function Cards() {
-  const [accountsAddress, setAccountsAddress] = useState("");
-  const [userAddress, setUserAddress] = useState("");
+  const [registryId, setRegistryId] = useState("");
   const [cardId, setCardId] = useState("");
   const [chargeAmount, setChargeAmount] = useState("");
   const [status, setStatus] = useState("");
@@ -14,9 +13,12 @@ export default function Cards() {
     try {
       setStatus("Setting Accounts contract on Cards...");
       const cards = await getCardsContract();
-      if (!ethers.isAddress(accountsAddress)) {
-        throw new Error("Invalid Accounts contract address");
+      const accountsAddress = import.meta.env.VITE_ACCOUNTS_ADDRESS;
+
+      if (!accountsAddress || !ethers.isAddress(accountsAddress)) {
+        throw new Error("Accounts contract address not configured. Please set VITE_ACCOUNTS_ADDRESS in your environment.");
       }
+
       const tx = await cards.setAccountsContract(accountsAddress);
       await tx.wait();
       setStatus(`Accounts contract set to ${accountsAddress}`);
@@ -29,11 +31,20 @@ export default function Cards() {
   const issueCard = async () => {
     try {
       setStatus("Issuing card...");
-      if (!ethers.isAddress(userAddress)) {
-        throw new Error("Invalid user address");
+      const trimmedId = registryId.trim();
+      if (!trimmedId) {
+        throw new Error("Account ID cannot be empty");
       }
 
-      // Derive the same bytes32 accountId from the user's address
+      // Resolve the registry account ID to a wallet address
+      const registry = await getAccountRegistryContract();
+      const userAddress = await registry.resolveAccount(trimmedId);
+
+      if (!ethers.isAddress(userAddress) || userAddress === ethers.ZeroAddress) {
+        throw new Error("No wallet found for this account ID");
+      }
+
+      // Derive the same bytes32 accountId from the resolved wallet address
       const accountId = ethers.zeroPadValue(userAddress.toLowerCase(), 32);
 
       const cards = await getCardsContract();
@@ -108,21 +119,18 @@ export default function Cards() {
 
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
         <h3>Link Accounts Contract</h3>
-        <input
-          placeholder="Accounts contract address (0x...)"
-          value={accountsAddress}
-          onChange={(e) => setAccountsAddress(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button onClick={setAccounts}>Set Accounts Contract</button>
+        <p style={{ fontSize: "0.9rem" }}>
+          Uses the configured VITE_ACCOUNTS_ADDRESS from the environment.
+        </p>
+        <button onClick={setAccounts}>Set Accounts Contract from Config</button>
       </div>
 
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
         <h3>Issue Card</h3>
         <input
-          placeholder="User wallet address (0x...)"
-          value={userAddress}
-          onChange={(e) => setUserAddress(e.target.value)}
+          placeholder="User account ID (registered on Dashboard)"
+          value={registryId}
+          onChange={(e) => setRegistryId(e.target.value)}
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
         <button onClick={issueCard}>Issue Card for User</button>

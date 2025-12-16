@@ -86,7 +86,7 @@ export default function App() {
 						Loans
 					</button>
 					<button
-						onClick={() => setActivePage("audit")}
+						onClick={() => setActivePage("audit")} 
 						style={{
 							marginRight: "0.5rem",
 							fontWeight: activePage === "audit" ? "bold" : "normal",

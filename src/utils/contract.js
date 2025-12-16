@@ -4,6 +4,7 @@ import Accounts from "../contracts/Accounts.json";
 import Audit from "../contracts/Audit.json";
 import Cards from "../contracts/Cards.json";
 import Loans from "../contracts/Loans.json";
+import AccountRegistry from "../contracts/AccountRegistry.json";
 
 // paste deployed addresses
 const ADDRESSES = {
@@ -11,6 +12,7 @@ const ADDRESSES = {
   audit: import.meta.env.VITE_AUDIT_ADDRESS, // "0xAUDIT_ADDRESS"
   cards: import.meta.env.VITE_CARDS_ADDRESS, // "0xCARDS_ADDRESS"
   loans: import.meta.env.VITE_LOANS_ADDRESS, // "0xLOANS_ADDRESS"
+  accountRegistry: import.meta.env.VITE_ACCOUNT_REGISTRY_ADDRESS, // "0xACCOUNT_REGISTRY_ADDRESS"
 };
 
 let provider;
@@ -86,4 +88,15 @@ export async function getLoansContract() {
   }
   
   return new ethers.Contract(address, Loans.abi, signer);
+}
+
+export async function getAccountRegistryContract() {
+  const signer = await getSigner();
+  const address = ADDRESSES.accountRegistry;
+
+  if (!address) {
+    throw new Error("AccountRegistry contract address not configured. Please set VITE_ACCOUNT_REGISTRY_ADDRESS in your environment variables.");
+  }
+
+  return new ethers.Contract(address, AccountRegistry.abi, signer);
 }

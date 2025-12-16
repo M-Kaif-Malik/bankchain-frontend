@@ -1,0 +1,47 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "AccountRegistry",
+  "sourceName": "contracts/AccountRegistry.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        { "indexed": false, "internalType": "string", "name": "accountId", "type": "string" },
+        { "indexed": false, "internalType": "address", "name": "wallet", "type": "address" }
+      ],
+      "name": "AccountRegistered",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        { "internalType": "string", "name": "accountId", "type": "string" }
+      ],
+      "name": "registerAccount",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "internalType": "string", "name": "accountId", "type": "string" }
+      ],
+      "name": "resolveAccount",
+      "outputs": [
+        { "internalType": "address", "name": "", "type": "address" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMyAccountId",
+      "outputs": [
+        { "internalType": "string", "name": "", "type": "string" }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x"
+}

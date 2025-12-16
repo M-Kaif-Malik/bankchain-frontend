@@ -1,4 +1,4 @@
-import { getAccountsContract, getSigner } from "../utils/contract";
+import { getAccountsContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
 import { ethers } from "ethers";
 import { useState } from "react";
@@ -11,9 +11,18 @@ export default function Deposit() {
     try {
       setStatus("Sending deposit...");
       const signer = await getSigner();
-      const address = await signer.getAddress();
 
-      const accountId = ethers.zeroPadValue(address.toLowerCase(), 32);
+      // Require that the user has registered an account id in AccountRegistry
+      const registry = await getAccountRegistryContract();
+      const myId = await registry.getMyAccountId();
+      if (!myId || myId.length === 0) {
+        setStatus("Error: please register an account ID in the Dashboard first");
+        return;
+      }
+
+      // Resolve the registered account ID to the underlying wallet and derive bytes32 id from that
+      const wallet = await registry.resolveAccount(myId);
+      const accountId = ethers.zeroPadValue(wallet.toLowerCase(), 32);
 
       const accounts = await getAccountsContract();
 

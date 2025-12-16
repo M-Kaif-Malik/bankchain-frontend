@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { getAccountsContract, getSigner } from "../utils/contract";
+import { getAccountsContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 
 export default function AdminAccounts() {
-  const [userAddress, setUserAddress] = useState("");
+  const [registryId, setRegistryId] = useState("");
   const [status, setStatus] = useState("");
 
   const createAccountForUser = async () => {
@@ -14,11 +14,20 @@ export default function AdminAccounts() {
       const ownerAddress = await signer.getAddress();
       console.log("Admin (owner) address:", ownerAddress);
 
-      if (!ethers.isAddress(userAddress)) {
-        throw new Error("Invalid user address");
+      const trimmedId = registryId.trim();
+      if (!trimmedId) {
+        throw new Error("Account ID cannot be empty");
       }
 
-      // Derive the same bytes32 account id from the user's address
+      // Resolve the registry account ID to a wallet address
+      const registry = await getAccountRegistryContract();
+      const userAddress = await registry.resolveAccount(trimmedId);
+
+      if (!ethers.isAddress(userAddress) || userAddress === ethers.ZeroAddress) {
+        throw new Error("No wallet found for this account ID");
+      }
+
+      // Derive the same bytes32 account id from the resolved wallet address
       const accountId = ethers.zeroPadValue(userAddress.toLowerCase(), 32);
       console.log("Derived accountId for user:", accountId);
 
@@ -28,7 +37,7 @@ export default function AdminAccounts() {
       const tx = await accounts.createAccount(accountId, userAddress);
       await tx.wait();
 
-      setStatus(`Account created for ${userAddress} with id ${accountId}`);
+      setStatus(`Account created for account ID "${trimmedId}" (wallet ${userAddress}) with internal id ${accountId}`);
     } catch (error) {
       console.error("Admin createAccount error:", error);
       setStatus(`Error: ${error.message}`);
@@ -40,9 +49,9 @@ export default function AdminAccounts() {
       <h2>Admin: Create User Account</h2>
       <p>Connect MetaMask with the Accounts contract owner address to use this panel.</p>
       <input
-        placeholder="User wallet address (0x...)"
-        value={userAddress}
-        onChange={(e) => setUserAddress(e.target.value)}
+        placeholder="User account ID (registered on Dashboard)"
+        value={registryId}
+        onChange={(e) => setRegistryId(e.target.value)}
         style={{ width: "100%", marginBottom: "0.5rem" }}
       />
       <button onClick={createAccountForUser}>Create Account</button>

@@ -4,7 +4,6 @@ import { getLoansContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
 
 export default function AdminLoans() {
-  const [accountsAddress, setAccountsAddress] = useState("");
   const [pendingLoans, setPendingLoans] = useState([]);
   const [rejectedIds, setRejectedIds] = useState(new Set());
   const [status, setStatus] = useState("");
@@ -51,9 +50,12 @@ export default function AdminLoans() {
     try {
       setStatus("Setting Accounts contract on Loans...");
       const loans = await getLoansContract();
-      if (!ethers.isAddress(accountsAddress)) {
-        throw new Error("Invalid Accounts contract address");
+      const accountsAddress = import.meta.env.VITE_ACCOUNTS_ADDRESS;
+
+      if (!accountsAddress || !ethers.isAddress(accountsAddress)) {
+        throw new Error("Accounts contract address not configured. Please set VITE_ACCOUNTS_ADDRESS in your environment.");
       }
+
       const tx = await loans.setAccountsContract(accountsAddress);
       await tx.wait();
       setStatus(`Accounts contract set to ${accountsAddress}`);
@@ -95,13 +97,10 @@ export default function AdminLoans() {
 
       <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
         <h3>Link Accounts Contract</h3>
-        <input
-          placeholder="Accounts contract address (0x...)"
-          value={accountsAddress}
-          onChange={(e) => setAccountsAddress(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button onClick={setAccounts}>Set Accounts Contract</button>
+        <p style={{ fontSize: "0.9rem" }}>
+          Uses the configured VITE_ACCOUNTS_ADDRESS from the environment.
+        </p>
+        <button onClick={setAccounts}>Set Accounts Contract from Config</button>
       </div>
 
       <div style={{ marginTop: "1rem" }}>
