@@ -70,16 +70,20 @@ export default function AdminLoans() {
       setStatus(`Approving loan ${loanId}...`);
       const loans = await getLoansContract();
       const id = BigInt(loanId);
-      const tx = await loans.approveLoan(id);
+
+      const loan = await loans.loans(id);
+      const accountId = loan.accountId || loan[0];
+      const principal = loan.principal || loan[1];
+
+      const tx = await loans.approveLoan(id, { value: principal });
       await tx.wait();
+
+      await logAuditAction("LoanApproved", accountId, principal);
+
       setStatus(`Loan ${loanId} approved`);
-
-      // Optional: audit log for approval (accountId not easily available here)
-      await logAuditAction("LoanApproved", ethers.ZeroHash, 0n);
-
       await loadLoans();
     } catch (error) {
-      console.error("approveLoan admin error:", error);
+      console.error("approveLoan admin error", error);
       setStatus(`Error: ${error.message}`);
     }
   };

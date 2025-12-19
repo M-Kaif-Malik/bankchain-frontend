@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getLoansContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
@@ -9,25 +9,57 @@ export default function Loans() {
   const [loanId, setLoanId] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [status, setStatus] = useState("");
+  const [myLoans, setMyLoans] = useState([]);
 
-  const setAccounts = async () => {
-    try {
-      setStatus("Setting Accounts contract on Loans...");
-      const loans = await getLoansContract();
-      const accountsAddress = import.meta.env.VITE_ACCOUNTS_ADDRESS;
+  useEffect(() => {
+    const loadMyLoans = async () => {
+      try {
+        setStatus("Loading your loans...");
 
-      if (!accountsAddress || !ethers.isAddress(accountsAddress)) {
-        throw new Error("Accounts contract address not configured. Please set VITE_ACCOUNTS_ADDRESS in your environment.");
+        const registry = await getAccountRegistryContract();
+        const myId = await registry.getMyAccountId();
+        if (!myId || myId.length === 0) {
+          setMyLoans([]);
+          setStatus("No account ID registered. Register one on the Accounts page to use loans.");
+          return;
+        }
+
+        const wallet = await registry.resolveAccount(myId);
+        const accountId = ethers.zeroPadValue(wallet.toLowerCase(), 32);
+
+        const loans = await getLoansContract();
+        const total = await loans.loanCounter();
+
+        const items = [];
+        for (let i = 1n; i <= total; i++) {
+          const loan = await loans.loans(i);
+          const loanAccountId = loan.accountId || loan[0];
+          const principal = loan.principal || loan[1];
+          const interest = loan.interest || loan[2];
+          const approved = loan.approved ?? loan[3];
+          const repaid = loan.repaid ?? loan[4];
+
+          if (loanAccountId === accountId) {
+            items.push({
+              id: i.toString(),
+              principal,
+              interest,
+              approved,
+              repaid,
+            });
+          }
+        }
+
+        setMyLoans(items);
+        setStatus("");
+      } catch (error) {
+        console.error("loadMyLoans error:", error);
+        setStatus(`Error loading loans: ${error.message}`);
       }
+    };
 
-      const tx = await loans.setAccountsContract(accountsAddress);
-      await tx.wait();
-      setStatus(`Accounts contract set to ${accountsAddress}`);
-    } catch (error) {
-      console.error("setAccountsContract error:", error);
-      setStatus(`Error: ${error.message}`);
-    }
-  };
+    loadMyLoans();
+  }, []);
 
   const applyLoan = async () => {
     try {
@@ -76,23 +108,6 @@ export default function Loans() {
     }
   };
 
-  const approveLoan = async () => {
-    try {
-      setStatus("Approving loan...");
-      const loans = await getLoansContract();
-      const id = BigInt(loanId);
-      const tx = await loans.approveLoan(id);
-      await tx.wait();
-      setStatus(`Loan ${loanId} approved`);
-
-      // We don't know accountId directly here; log with zero accountId and 0 amount for now
-      await logAuditAction("LoanApproved", ethers.ZeroHash, 0n);
-    } catch (error) {
-      console.error("approveLoan error:", error);
-      setStatus(`Error: ${error.message}`);
-    }
-  };
-
   const repayLoan = async () => {
     try {
       setStatus("Repaying loan...");
@@ -120,20 +135,12 @@ export default function Loans() {
   };
 
   return (
-    <div style={{ padding: "1.5rem", border: "1px solid #ddd", borderRadius: 8 }}>
-      <h2>Loans Dashboard</h2>
-      <p>Users can apply for and repay loans. Bank admin can link Accounts and approve loans.</p>
+    <div style={{ padding: "1.5rem", border: "1px solid #222", borderRadius: 12, background: "#050509" }}>
+      <h2>Loans</h2>
+      <p>Apply for loans and repay existing ones using your registered account.</p>
 
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h3>Admin: Link Accounts Contract</h3>
-        <p style={{ fontSize: "0.9rem" }}>
-          Uses the configured VITE_ACCOUNTS_ADDRESS from the environment.
-        </p>
-        <button onClick={setAccounts}>Set Accounts Contract from Config</button>
-      </div>
-
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h3>User: Apply for Loan</h3>
+      <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
+        <h3>Apply for Loan</h3>
         <input
           placeholder="Principal (ETH)"
           value={principal}
@@ -149,19 +156,8 @@ export default function Loans() {
         <button onClick={applyLoan}>Apply Loan for My Account</button>
       </div>
 
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h3>Admin: Approve Loan</h3>
-        <input
-          placeholder="Loan ID"
-          value={loanId}
-          onChange={(e) => setLoanId(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button onClick={approveLoan}>Approve Loan</button>
-      </div>
-
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h3>User: Repay Loan</h3>
+      <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
+        <h3>Repay Loan</h3>
         <input
           placeholder="Loan ID"
           value={loanId}
@@ -175,6 +171,41 @@ export default function Loans() {
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
         <button onClick={repayLoan}>Repay Loan</button>
+      </div>
+
+      <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
+        <h3>Your Loans</h3>
+        {myLoans.length === 0 && (
+          <p style={{ fontSize: "0.9rem" }}>No loans found for your account.</p>
+        )}
+        {myLoans.length > 0 && (
+          <table style={{ width: "100%", fontSize: "0.9rem" }}>
+            <thead>
+              <tr>
+                <th align="left">Loan ID</th>
+                <th align="left">Principal (ETH)</th>
+                <th align="left">Interest (ETH)</th>
+                <th align="left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myLoans.map((loan) => (
+                <tr key={loan.id}>
+                  <td>{loan.id}</td>
+                  <td>{ethers.formatEther(loan.principal)}</td>
+                  <td>{ethers.formatEther(loan.interest)}</td>
+                  <td>
+                    {loan.repaid
+                      ? "Repaid"
+                      : loan.approved
+                      ? "Approved"
+                      : "Pending"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}

@@ -28,6 +28,27 @@ export default function Cards() {
     }
   };
 
+  const chargeCard = async () => {
+    try {
+      setStatus("Charging card...");
+      const cards = await getCardsContract();
+      const id = BigInt(cardId);
+      const amountWei = ethers.parseEther(chargeAmount || "0");
+
+      const cardInfo = await cards.cards(id);
+      const accountId = cardInfo.accountId || cardInfo[0];
+
+      const tx = await cards.chargeCard(id, amountWei);
+      await tx.wait();
+
+      await logAuditAction("CardCharged", accountId, amountWei);
+      setStatus(`Charged card ${cardId} with ${chargeAmount} ETH`);
+    } catch (error) {
+      console.error("chargeCard error:", error);
+      setStatus(`Error: ${error.message}`);
+    }
+  };
+
   const issueCard = async () => {
     try {
       setStatus("Issuing card...");
@@ -88,26 +109,6 @@ export default function Cards() {
       await logAuditAction("CardBlocked", accountId, 0n);
     } catch (error) {
       console.error("blockCard error:", error);
-      setStatus(`Error: ${error.message}`);
-    }
-  };
-
-  const chargeCard = async () => {
-    try {
-      setStatus("Charging card...");
-      const cards = await getCardsContract();
-      const id = BigInt(cardId);
-      const amountWei = ethers.parseEther(chargeAmount || "0");
-      const tx = await cards.chargeCard(id, amountWei);
-      await tx.wait();
-      setStatus(`Charged card ${cardId} with ${chargeAmount} ETH`);
-
-      // Lookup accountId and log charged amount
-      const cardInfo = await cards.cards(id);
-      const accountId = cardInfo.accountId || cardInfo[0];
-      await logAuditAction("CardCharged", accountId, amountWei);
-    } catch (error) {
-      console.error("chargeCard error:", error);
       setStatus(`Error: ${error.message}`);
     }
   };

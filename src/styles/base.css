@@ -1,0 +1,93 @@
+@import "./variables.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+    sans-serif;
+  color: var(--color-text-main);
+  background:
+    radial-gradient(circle at top, #020713 0, #020713 40%, #020713 100%),
+    radial-gradient(circle at bottom left, #064e3b 0, #020713 65%),
+    radial-gradient(circle at bottom right, #047857 0, #020713 65%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.panel {
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.3rem;
+}
+
+.layout-root {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.layout-main {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.8rem 2.4rem;
+}
+
+.layout-content {
+  margin-top: 1.2rem;
+  max-width: 1120px;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 960px) {
+  .layout-root {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .layout-main {
+    padding-inline: 1.25rem;
+  }
+
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+

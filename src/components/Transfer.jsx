@@ -1,4 +1,4 @@
-import { getAccountsContract, getSigner } from "../utils/contract";
+import { getAccountsContract, getAccountRegistryContract } from "../utils/contract";
 import { ethers } from "ethers";
 import { useState } from "react";
 
@@ -11,24 +11,28 @@ export default function Transfer() {
     try {
       setStatus("Preparing transfer...");
 
-      const signer = await getSigner();
-      const fromAddress = await signer.getAddress();
+      const registry = await getAccountRegistryContract();
 
-      const toAddress = customTo;
+      // FROM: use the caller's registered account ID
+      const myId = await registry.getMyAccountId();
+      if (!myId) throw new Error("Register your account ID first");
 
-      if (!toAddress) throw new Error("Enter a recipient address");
-      if (!ethers.isAddress(toAddress)) throw new Error("Invalid recipient address");
+      const fromWallet = await registry.resolveAccount(myId);
+      const fromId = ethers.zeroPadValue(fromWallet.toLowerCase(), 32);
 
-      // Derive bytes32 account ids from wallet addresses (hidden from user)
-      const fromId = ethers.zeroPadValue(fromAddress.toLowerCase(), 32);
-      const toId = ethers.zeroPadValue(toAddress.toLowerCase(), 32);
+      // TO: resolve recipient by registry ID (entered in the UI field)
+      const toRegistryId = customTo.trim();
+      if (!toRegistryId) throw new Error("Enter recipient account ID");
+
+      const toWallet = await registry.resolveAccount(toRegistryId);
+      if (!ethers.isAddress(toWallet) || toWallet === ethers.ZeroAddress) {
+        throw new Error("Recipient account does not exist");
+      }
+
+      const toId = ethers.zeroPadValue(toWallet.toLowerCase(), 32);
 
       const accounts = await getAccountsContract();
-      const tx = await accounts.transfer(
-        fromId,
-        toId,
-        ethers.parseEther(amount)
-      );
+      const tx = await accounts.transfer(fromId, toId, ethers.parseEther(amount));
       await tx.wait();
 
       setStatus("Transfer successful");
@@ -45,7 +49,7 @@ export default function Transfer() {
       <h3>Transfer</h3>
       <p>Enter a recipient address</p>
       <input
-        placeholder="Recipient address (0x...)"
+        placeholder="Recipient account ID"
         value={customTo}
         onChange={(e) => setCustomTo(e.target.value)}
       />

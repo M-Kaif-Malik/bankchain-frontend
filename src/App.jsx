@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+
+import Layout from "./layout/Layout.jsx";
 
 import WalletConnect from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
@@ -10,103 +12,136 @@ import AdminAccounts from "./components/AdminAccounts";
 import Cards from "./components/Cards";
 import Loans from "./components/Loans";
 import Audit from "./components/Audit";
+import AdminLoans from "./components/AdminLoans";
+import UserCards from "./components/UserCards";
+import { getAccountsContract } from "./utils/contract";
 
 export default function App() {
-	const [account, setAccount] = useState(null);
-	const [accounts, setAccounts] = useState([]);
-	const [activePage, setActivePage] = useState("accounts"); // "accounts" | "cards" | "loans" | "audit" | "admin"
+  const [account, setAccount] = useState(null);
+  const [accounts, setAccounts] = useState([]);
+  const [activePage, setActivePage] = useState("accounts"); // "accounts" | "cards" | "loans" | "audit" | "admin"
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-	const renderContent = () => {
-		if (!account) {
-			return <WalletConnect setAccount={setAccount} setAccounts={setAccounts} />;
-		}
+  useEffect(() => {
+    if (!account) {
+      setIsAdmin(false);
+      return;
+    }
 
-		if (activePage === "accounts") {
-			return (
-				<>
-					<Dashboard />
-					<Deposit />
-					<Withdraw />
-					<Transfer accounts={accounts} currentAccount={account} />
-				</>
-			);
-		}
+    let cancelled = false;
 
-		if (activePage === "cards") {
-			return <Cards />;
-		}
+    const checkAdmin = async () => {
+      try {
+        const accountsContract = await getAccountsContract();
+        const owner = await accountsContract.owner();
+        if (!cancelled) {
+          setIsAdmin(owner.toLowerCase() === account.toLowerCase());
+        }
+      } catch (err) {
+        console.error("Failed to check admin status:", err);
+        if (!cancelled) {
+          setIsAdmin(false);
+        }
+      }
+    };
 
-		if (activePage === "loans") {
-			return <Loans />;
-		}
+    checkAdmin();
 
-		if (activePage === "audit") {
-			return <Audit />;
-		}
+    return () => {
+      cancelled = true;
+    };
+  }, [account]);
 
-		if (activePage === "admin") {
-			return <AdminAccounts />;
-		}
+  const renderContent = () => {
+    if (!account) {
+      return <WalletConnect setAccount={setAccount} setAccounts={setAccounts} />;
+    }
 
-		return null;
-	};
+    if (activePage === "accounts") {
+      return (
+        <div className="page">
+          <div className="grid-2">
+            <div className="card panel neon-glow">
+              <Dashboard />
+            </div>
+            <div className="card panel neon-glow">
+              <Transfer accounts={accounts} currentAccount={account} />
+            </div>
+          </div>
+          <div className="grid-2" style={{ marginTop: "1rem" }}>
+            <div className="card panel neon-glow">
+              <Deposit />
+            </div>
+            <div className="card panel neon-glow">
+              <Withdraw />
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-	return (
-		<div className="app">
-			<h1>🏦 BankChain</h1>
+    if (activePage === "cards") {
+      return (
+        <div className="page">
+          <div className="card panel neon-glow">
+            <UserCards />
+          </div>
+        </div>
+      );
+    }
 
-			{/* Top-level navigation once a wallet is connected */}
-			{account && (
-				<div style={{ marginBottom: "1rem" }}>
-					<button
-						onClick={() => setActivePage("accounts")}
-						style={{
-							marginRight: "0.5rem",
-							fontWeight: activePage === "accounts" ? "bold" : "normal",
-						}}
-					>
-						Accounts
-					</button>
-					<button
-						onClick={() => setActivePage("cards")}
-						style={{
-							marginRight: "0.5rem",
-							fontWeight: activePage === "cards" ? "bold" : "normal",
-						}}
-					>
-						Cards
-					</button>
-					<button
-						onClick={() => setActivePage("loans")}
-						style={{
-							marginRight: "0.5rem",
-							fontWeight: activePage === "loans" ? "bold" : "normal",
-						}}
-					>
-						Loans
-					</button>
-					<button
-						onClick={() => setActivePage("audit")} 
-						style={{
-							marginRight: "0.5rem",
-							fontWeight: activePage === "audit" ? "bold" : "normal",
-						}}
-					>
-						Audit
-					</button>
-					<button
-						onClick={() => setActivePage("admin")}
-						style={{
-							fontWeight: activePage === "admin" ? "bold" : "normal",
-						}}
-					>
-						Admin
-					</button>
-				</div>
-			)}
+    if (activePage === "loans") {
+      return (
+        <div className="page">
+          <div className="card panel neon-glow">
+            <Loans />
+          </div>
+        </div>
+      );
+    }
 
-			{renderContent()}
-		</div>
-	);
+    if (activePage === "audit") {
+      return (
+        <div className="page">
+          <div className="card panel neon-glow">
+            <Audit />
+          </div>
+        </div>
+      );
+    }
+
+    if (activePage === "admin" && isAdmin) {
+      return (
+        <div className="page">
+          <div className="card panel neon-glow">
+            <AdminAccounts />
+          </div>
+          <div className="card panel neon-glow" style={{ marginTop: "1rem" }}>
+            <Cards />
+          </div>
+          <div className="card panel neon-glow" style={{ marginTop: "1rem" }}>
+            <AdminLoans />
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <Layout
+      activePage={activePage}
+      onChangePage={(page) => {
+        if (page === "admin" && !isAdmin) return;
+        setActivePage(page);
+      }}
+      isSidebarOpen={isSidebarOpen}
+      onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+      isAdmin={isAdmin}
+    >
+      {renderContent()}
+    </Layout>
+  );
 }
-
