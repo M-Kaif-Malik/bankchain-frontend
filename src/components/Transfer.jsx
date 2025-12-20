@@ -1,11 +1,13 @@
 import { getAccountsContract, getAccountRegistryContract } from "../utils/contract";
 import { ethers } from "ethers";
 import { useState } from "react";
+import { useBalance } from "../contexts/BalanceContext";
 
 export default function Transfer() {
   const [customTo, setCustomTo] = useState("");
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
+  const { bump } = useBalance();
 
   const transfer = async () => {
     try {
@@ -38,6 +40,7 @@ export default function Transfer() {
       setStatus("Transfer successful");
       setAmount("");
       setCustomTo("");
+      try { bump(); } catch (e) {}
     } catch (error) {
       console.error("Transfer error:", error);
       setStatus("Transfer failed: " + error.message);
@@ -47,9 +50,9 @@ export default function Transfer() {
   return (
     <div>
       <h3>Transfer</h3>
-      <p>Enter a recipient address</p>
+      <p>Enter a Recipient Address:</p>
       <input
-        placeholder="Recipient account ID"
+        placeholder="Recipient Account ID"
         value={customTo}
         onChange={(e) => setCustomTo(e.target.value)}
       />
@@ -60,7 +63,7 @@ export default function Transfer() {
         onChange={(e) => setAmount(e.target.value)}
       />
 
-      <button onClick={transfer} disabled={!amount}>
+      <button className="btn btn--primary btn--md" onClick={transfer} disabled={!amount}>
         Send
       </button>
       {status && <p>{status}</p>}

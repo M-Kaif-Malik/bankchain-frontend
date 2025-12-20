@@ -54,7 +54,7 @@ export default function AdminAccounts() {
         onChange={(e) => setRegistryId(e.target.value)}
         style={{ width: "100%", marginBottom: "0.5rem" }}
       />
-      <button onClick={createAccountForUser}>Create Account</button>
+      <button className="btn btn--primary btn--md" onClick={createAccountForUser}>Create Account</button>
       {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
     </div>
   );

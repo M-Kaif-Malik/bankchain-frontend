@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getLoansContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
+import { useBalance } from "../contexts/BalanceContext";
 
 export default function Loans() {
   const [principal, setPrincipal] = useState("");
@@ -9,6 +10,7 @@ export default function Loans() {
   const [loanId, setLoanId] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [status, setStatus] = useState("");
+  const { bump } = useBalance();
   const [myLoans, setMyLoans] = useState([]);
 
   useEffect(() => {
@@ -128,6 +130,7 @@ export default function Loans() {
 
        // audit log for repayment (we don't know accountId from here, log zero accountId)
        await logAuditAction("LoanRepaid", ethers.ZeroHash, amountWei);
+       try { bump(); } catch (e) {}
     } catch (error) {
       console.error("repayLoan error:", error);
       setStatus(`Error: ${error.message}`);
@@ -153,7 +156,7 @@ export default function Loans() {
           onChange={(e) => setInterest(e.target.value)}
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-        <button onClick={applyLoan}>Apply Loan for My Account</button>
+        <button className="btn btn--primary btn--md" onClick={applyLoan}>Apply Loan for My Account</button>
       </div>
 
       <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>
@@ -170,7 +173,7 @@ export default function Loans() {
           onChange={(e) => setRepayAmount(e.target.value)}
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-        <button onClick={repayLoan}>Repay Loan</button>
+        <button className="btn btn--primary btn--md" onClick={repayLoan}>Repay Loan</button>
       </div>
 
       <div style={{ marginTop: "1.25rem", marginBottom: "1.25rem" }}>

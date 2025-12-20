@@ -104,7 +104,7 @@ export default function AdminLoans() {
         <p style={{ fontSize: "0.9rem" }}>
           Uses the configured VITE_ACCOUNTS_ADDRESS from the environment.
         </p>
-        <button onClick={setAccounts}>Set Accounts Contract from Config</button>
+        <button className="btn btn--secondary btn--md" onClick={setAccounts}>Set Accounts Contract from Config</button>
       </div>
 
       <div style={{ marginTop: "1rem" }}>
@@ -132,12 +132,13 @@ export default function AdminLoans() {
                   <td>{ethers.formatEther(loan.interest)}</td>
                   <td>
                     <button
+                      className="btn btn--primary btn--sm"
                       style={{ marginRight: "0.5rem" }}
                       onClick={() => approveLoan(loan.id)}
                     >
                       Approve
                     </button>
-                    <button onClick={() => rejectLoan(loan.id)}>Reject</button>
+                    <button className="btn btn--ghost btn--sm" onClick={() => rejectLoan(loan.id)}>Reject</button>
                   </td>
                 </tr>
               ))}

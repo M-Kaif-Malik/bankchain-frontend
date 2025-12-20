@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 import Layout from "./layout/Layout.jsx";
+import { BalanceProvider } from "./contexts/BalanceContext";
 
 import WalletConnect from "./components/WalletConnect";
 import Dashboard from "./components/Dashboard";
@@ -131,7 +132,8 @@ export default function App() {
   };
 
   return (
-    <Layout
+    <BalanceProvider>
+      <Layout
       activePage={activePage}
       onChangePage={(page) => {
         if (page === "admin" && !isAdmin) return;
@@ -139,9 +141,11 @@ export default function App() {
       }}
       isSidebarOpen={isSidebarOpen}
       onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
+      account={account}
       isAdmin={isAdmin}
-    >
+      >
       {renderContent()}
-    </Layout>
+      </Layout>
+    </BalanceProvider>
   );
 }

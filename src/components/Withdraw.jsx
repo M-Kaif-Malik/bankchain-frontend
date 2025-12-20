@@ -2,10 +2,13 @@ import { getAccountsContract, getSigner, getAccountRegistryContract } from "../u
 import { logAuditAction } from "../utils/auditLogger";
 import { ethers } from "ethers";
 import { useState } from "react";
+import { useBalance } from "../contexts/BalanceContext";
 
 export default function Withdraw() {
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
+
+  const { bump } = useBalance();
 
   const withdraw = async () => {
     try {
@@ -36,6 +39,7 @@ export default function Withdraw() {
 
       // best-effort audit log (will only succeed for Audit owner)
       await logAuditAction("Withdraw", accountId, valueWei);
+      try { bump(); } catch (e) {}
     } catch (error) {
       console.error("Withdraw error:", error);
       alert("Withdraw failed: " + error.message);
@@ -50,7 +54,7 @@ export default function Withdraw() {
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <button onClick={withdraw}>Withdraw</button>
+      <button className="btn btn--primary btn--md" onClick={withdraw}>Withdraw</button>
     </div>
   );
 }

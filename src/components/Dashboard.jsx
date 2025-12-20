@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBalance } from "../contexts/BalanceContext";
 import { getAccountsContract, getSigner, getAccountRegistryContract } from "../utils/contract";
 import { ethers } from "ethers";
 
@@ -7,6 +8,8 @@ export default function Dashboard() {
   const [registryId, setRegistryId] = useState("");
   const [newRegistryId, setNewRegistryId] = useState("");
   const [registryStatus, setRegistryStatus] = useState("");
+
+  const { version } = useBalance();
 
   useEffect(() => {
     async function loadBalance() {
@@ -52,7 +55,7 @@ export default function Dashboard() {
 
     loadBalance();
     loadRegistryId();
-  }, []);
+  }, [version]);
 
   const registerAccountId = async () => {
     try {
@@ -75,11 +78,11 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h2>Account Balance</h2>
-      <p>{balance} ETH</p>
+      <h2 align="center">Account Balance</h2>
+      <p align="center">{balance} ETH</p>
 
       <div style={{ marginTop: "1.5rem", padding: "1rem", border: "1px solid #ccc", borderRadius: 8 }}>
-        <h3>Account Registry</h3>
+        <h3 align="center">Account Registry</h3>
         <p style={{ fontSize: "0.9rem" }}>
           You must register an account ID here before you can use deposits, withdrawals, or loans.
         </p>
@@ -93,7 +96,7 @@ export default function Dashboard() {
           onChange={(e) => setNewRegistryId(e.target.value)}
           style={{ width: "100%", marginBottom: "0.5rem" }}
         />
-        <button onClick={registerAccountId}>Register Account ID</button>
+        <button className="btn btn--primary btn--md" onClick={registerAccountId}>Register Account ID</button>
         {registryStatus && <p style={{ marginTop: "0.5rem" }}>{registryStatus}</p>}
       </div>
     </div>

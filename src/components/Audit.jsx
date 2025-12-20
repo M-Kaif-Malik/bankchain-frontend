@@ -64,15 +64,16 @@ export default function Audit() {
   return (
     <div className="card">
       <h2>Audit Logs</h2>
-      <label className="label">
-        <input
-          type="checkbox"
-          checked={filterMine}
-          onChange={(e) => setFilterMine(e.target.checked)}
-          style={{ marginRight: "0.5rem" }}
-        />
-        Show only my account
-      </label>
+      <div style={{ display: "flex", justifyContent: "center", margin: "0.6rem 0" }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+          <input
+            type="checkbox"
+            checked={filterMine}
+            onChange={(e) => setFilterMine(e.target.checked)}
+          />
+          <span style={{ display: 'inline-block' }}>Show only my account</span>
+        </label>
+      </div>
       {status && <p className="status">{status}</p>}
 
       {!status && logs.length === 0 && (

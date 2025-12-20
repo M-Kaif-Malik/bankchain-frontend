@@ -2,10 +2,12 @@ import { getAccountsContract, getSigner, getAccountRegistryContract } from "../u
 import { logAuditAction } from "../utils/auditLogger";
 import { ethers } from "ethers";
 import { useState } from "react";
+import { useBalance } from "../contexts/BalanceContext";
 
 export default function Deposit() {
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState("");
+  const { bump } = useBalance();
 
   const deposit = async () => {
     try {
@@ -36,6 +38,8 @@ export default function Deposit() {
 
       // best-effort audit log (will only succeed for Audit owner)
       await logAuditAction("Deposit", accountId, valueWei);
+      // notify app to refresh balances
+      try { bump(); } catch (e) {}
     } catch (error) {
       console.error("Deposit error:", error);
       alert("Deposit failed: " + error.message);
@@ -50,7 +54,7 @@ export default function Deposit() {
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <button onClick={deposit}>Deposit</button>
+      <button className="btn btn--primary btn--md" onClick={deposit}>Deposit</button>
     </div>
   );
 }
