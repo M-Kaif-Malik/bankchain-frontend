@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+import { useBalance } from "../contexts/BalanceContext";
 import { getCardsContract, getAccountRegistryContract } from "../utils/contract";
 import { logAuditAction } from "../utils/auditLogger";
 
 export default function UserCards() {
   const [cardId, setCardId] = useState("");
+  const [chargeCardId, setChargeCardId] = useState("");
   const [chargeAmount, setChargeAmount] = useState("");
   const [status, setStatus] = useState("");
   const [myCards, setMyCards] = useState([]);
+  const { bump } = useBalance();
 
   useEffect(() => {
     const loadMyCards = async () => {
@@ -50,6 +53,28 @@ export default function UserCards() {
     loadMyCards();
   }, []);
 
+  const chargeCard = async () => {
+    try {
+      setStatus("Charging card...");
+      const cards = await getCardsContract();
+      const id = BigInt(chargeCardId || cardId);
+      const amountWei = ethers.parseEther(chargeAmount || "0");
+
+      const cardInfo = await cards.cards(id);
+      const accountId = cardInfo.accountId || cardInfo[0];
+
+      const tx = await cards.chargeCard(id, amountWei);
+      await tx.wait();
+
+      await logAuditAction("CardCharged", accountId, amountWei);
+      setStatus(`Charged card ${id.toString()} with ${chargeAmount} ETH`);
+      try { bump(); } catch (e) {}
+    } catch (error) {
+      console.error("chargeCard error:", error);
+      setStatus(`Error: ${error.message}`);
+    }
+  };
+
   return (
     <div style={{ padding: "1.5rem", border: "1px solid #222", borderRadius: 12, background: "#050509" }}>
       <h2>Cards</h2>
@@ -71,7 +96,7 @@ export default function UserCards() {
               gap: "0.75rem",
               marginTop: "0.5rem",
             }}
-         >
+          >
             {myCards.map((id) => (
               <div
                 key={id}
@@ -101,6 +126,23 @@ export default function UserCards() {
             ))}
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+        <h3>Charge Card</h3>
+        <input
+          placeholder="Card ID"
+          value={chargeCardId}
+          onChange={(e) => setChargeCardId(e.target.value)}
+          style={{ width: "100%", marginBottom: "0.5rem" }}
+        />
+        <input
+          placeholder="Amount in ETH"
+          value={chargeAmount}
+          onChange={(e) => setChargeAmount(e.target.value)}
+          style={{ width: "100%", marginBottom: "0.5rem" }}
+        />
+        <button className="btn btn--primary btn--md" onClick={chargeCard}>Charge Card</button>
       </div>
 
       {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}

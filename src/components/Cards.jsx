@@ -10,8 +10,6 @@ export default function Cards() {
   // legacy single cardId kept for backward compatibility in case other code references it
   // but we use separate states below to avoid cross-writing between sections
   const [blockCardId, setBlockCardId] = useState("");
-  const [chargeCardId, setChargeCardId] = useState("");
-  const [chargeAmount, setChargeAmount] = useState("");
   const [status, setStatus] = useState("");
   const { bump } = useBalance();
 
@@ -34,27 +32,7 @@ export default function Cards() {
     }
   };
 
-  const chargeCard = async () => {
-    try {
-      setStatus("Charging card...");
-      const cards = await getCardsContract();
-      const id = BigInt(chargeCardId || cardId);
-      const amountWei = ethers.parseEther(chargeAmount || "0");
-
-      const cardInfo = await cards.cards(id);
-      const accountId = cardInfo.accountId || cardInfo[0];
-
-      const tx = await cards.chargeCard(id, amountWei);
-      await tx.wait();
-
-      await logAuditAction("CardCharged", accountId, amountWei);
-      setStatus(`Charged card ${cardId} with ${chargeAmount} ETH`);
-      try { bump(); } catch (e) {}
-    } catch (error) {
-      console.error("chargeCard error:", error);
-      setStatus(`Error: ${error.message}`);
-    }
-  };
+  
 
   const issueCard = async () => {
     try {
@@ -152,24 +130,7 @@ export default function Cards() {
             onChange={(e) => setBlockCardId(e.target.value)}
             style={{ width: "100%", marginBottom: "0.5rem" }}
           />
-          <button className="btn btn--ghost btn--md" onClick={blockCard}>Block Card</button>
-      </div>
-
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <h3>Charge Card</h3>
-        <input
-          placeholder="Card ID"
-          value={chargeCardId}
-          onChange={(e) => setChargeCardId(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <input
-          placeholder="Amount in ETH"
-          value={chargeAmount}
-          onChange={(e) => setChargeAmount(e.target.value)}
-          style={{ width: "100%", marginBottom: "0.5rem" }}
-        />
-        <button className="btn btn--primary btn--md" onClick={chargeCard}>Charge Card</button>
+          <button className="btn btn--primary btn--md" onClick={blockCard}>Block Card</button>
       </div>
 
       {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
